@@ -18,22 +18,22 @@ rootProject.ext.version_minSdk = 18
 // https://github.com/vsch/flexmark-java/releases
 ext.version_library_flexmark = "0.42.14"
 
-// ================== Added: fork flavors ==================
+// ================== Added: fork flavors (module-local) ==================
 ext.markorFlavors = [
-        [name: "notes",     label: "Markor Notes"],
-        [name: "mental",    label: "Markor Mental"],
-        [name: "journal",   label: "Markor Journal"],
-        [name: "tabletop",  label: "Markor Tabletop"],
-        [name: "dev",       label: "Markor Dev"],
-        [name: "health",    label: "Markor Health"],
-        [name: "wiki",      label: "Markor Wiki"],
-        [name: "social",    label: "Markor Social"],
-        [name: "reference", label: "Markor Reference"],
-        [name: "learn",     label: "Markor Learn"],
-        [name: "todo",      label: "Markor To-Do"],
-        [name: "scratch",   label: "Markor Scratch"]
+    [name: "notes",     label: "Markor Notes"],
+    [name: "mental",    label: "Markor Mental"],
+    [name: "journal",   label: "Markor Journal"],
+    [name: "tabletop",  label: "Markor Tabletop"],
+    [name: "dev",       label: "Markor Dev"],
+    [name: "health",    label: "Markor Health"],
+    [name: "wiki",      label: "Markor Wiki"],
+    [name: "social",    label: "Markor Social"],
+    [name: "reference", label: "Markor Reference"],
+    [name: "learn",     label: "Markor Learn"],
+    [name: "todo",      label: "Markor To-Do"],
+    [name: "scratch",   label: "Markor Scratch"]
 ]
-// ========================================================
+// =======================================================================
 
 android {
     buildToolsVersion rootProject.ext.version_buildTools
@@ -59,6 +59,7 @@ android {
 
     flavorDimensions "default"
     productFlavors {
+        // Upstream/testing flavors (kept)
         flavorAtest {
             applicationId "net.gsantner.markor_test"
             versionCode = Integer.parseInt(new Date().format('yyMMdd'))
@@ -70,8 +71,9 @@ android {
             buildConfigField "boolean", "IS_GPLAY_BUILD", "true"
         }
 
-        // ========== Your extra forks ==========
-        ext.markorFlavors.each { f ->
+        // ---------- Your extra forks ----------
+        def forks = (project.hasProperty('markorFlavors') ? project.ext.markorFlavors : [])
+        forks.each { f ->
             create(f.name) {
                 dimension "default"
                 applicationId "io.embanaphe.${f.name}"
@@ -79,6 +81,7 @@ android {
                 resValue "string", "app_name", f.label
             }
         }
+        // -------------------------------------
     }
 
     sourceSets {
@@ -91,6 +94,7 @@ android {
         main.assets.srcDirs += 'thirdparty/assets'
     }
 
+    // Release signing from CI secrets (PKCS#12)
     signingConfigs {
         release {
             def ksPath = System.getenv("ANDROID_KEYSTORE_PATH") ?: ""
