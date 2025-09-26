@@ -2,8 +2,13 @@ name: Build & Auto-Release Signed APKs (Markor forks)
 
 on:
   push:
-    tags: [ 'v*' ]   # only run when a tag like v2.15.1 is pushed
-  workflow_dispatch:
+    tags: [ 'v*' ]          # normal path: runs on real upstream tags
+  workflow_dispatch:        # manual run path
+    inputs:
+      tag:
+        description: 'Tag to use (leave blank to auto-generate one)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -81,15 +86,41 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: dist
+
+      - name: Determine tag
+        id: tagmeta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ -n "${{ github.event.inputs.tag }}" ]; then
+              TAG="${{ github.event.inputs.tag }}"
+            else
+              TAG="v0.0.0-manual-${{ github.run_number }}"
+            fi
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+            # create and push tag
+            git init
+            git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+            git fetch --depth=1 origin "${GITHUB_REF_NAME:-master}"
+            git checkout -qf FETCH_HEAD
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$TAG"
+            git push origin "$TAG"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: List files (debug)
         run: find dist -type f -maxdepth 3 -print
+
       - name: Create GitHub Release and upload APKs
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref_name }}
-          name: "Upstream sync: ${{ github.ref_name }}"
+          tag_name: ${{ steps.tagmeta.outputs.tag }}
+          name: "Build: ${{ steps.tagmeta.outputs.tag }}"
           draft: false
-          prerelease: false
+          prerelease: ${{ github.event_name == 'workflow_dispatch' }}
           files: dist/**/**/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
