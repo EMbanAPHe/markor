@@ -18,7 +18,7 @@ rootProject.ext.version_minSdk = 18
 // https://github.com/vsch/flexmark-java/releases
 ext.version_library_flexmark = "0.42.14"
 
-/** --------- LIST-DRIVEN FLAVORS --------- **/
+// ================== Added: fork flavors ==================
 ext.markorFlavors = [
         [name: "notes",     label: "Markor Notes"],
         [name: "mental",    label: "Markor Mental"],
@@ -33,6 +33,7 @@ ext.markorFlavors = [
         [name: "todo",      label: "Markor To-Do"],
         [name: "scratch",   label: "Markor Scratch"]
 ]
+// ========================================================
 
 android {
     buildToolsVersion rootProject.ext.version_buildTools
@@ -56,26 +57,21 @@ android {
         setProperty("archivesBaseName", applicationId + "-v" + versionCode + "-" + versionName)
     }
 
-    /** one dimension only */
     flavorDimensions "default"
-
-    /** single productFlavors block: keep upstream flavors, then add yours from the list */
     productFlavors {
-        // upstream/testing flavors
         flavorAtest {
             applicationId "net.gsantner.markor_test"
             versionCode = Integer.parseInt(new Date().format('yyMMdd'))
             versionName = defaultConfig.versionName + "-" + new Date().format('HHmm')
             buildConfigField "boolean", "IS_TEST_BUILD", "true"
         }
-        flavorDefault {
-        }
+        flavorDefault { }
         flavorGplay {
             buildConfigField "boolean", "IS_GPLAY_BUILD", "true"
         }
 
-        // generated forks
-        rootProject.ext.markorFlavors.each { f ->
+        // ========== Your extra forks ==========
+        ext.markorFlavors.each { f ->
             create(f.name) {
                 dimension "default"
                 applicationId "io.embanaphe.${f.name}"
@@ -95,35 +91,34 @@ android {
         main.assets.srcDirs += 'thirdparty/assets'
     }
 
-    // ===== Signing for release (reads secrets/env vars at build time) =====
     signingConfigs {
         release {
-            // CI (GitHub Actions) should set ANDROID_KEYSTORE_PATH via $GITHUB_ENV
             def ksPath = System.getenv("ANDROID_KEYSTORE_PATH") ?: ""
             if (ksPath) {
                 storeFile file(ksPath)
                 storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
                 keyAlias System.getenv("ANDROID_KEY_ALIAS")
                 keyPassword System.getenv("ANDROID_KEY_ALIAS_PASSWORD")
-                // Using OpenSSL-generated PKCS#12 keystore
-                storeType "PKCS12"   // remove if you switch to a .jks keystore
+                storeType "PKCS12"
             }
         }
     }
 
     buildTypes {
         release {
-            // Keep upstream release settings; add signing
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
         }
-        // debug remains default
     }
 
     packagingOptions {
         resources {
-            excludes += ['META-INF/LICENSE-LGPL-2.1.txt', 'META-INF/LICENSE-LGPL-3.txt', 'META-INF/LICENSE-W3C-TEST']
+            excludes += [
+                'META-INF/LICENSE-LGPL-2.1.txt',
+                'META-INF/LICENSE-LGPL-3.txt',
+                'META-INF/LICENSE-W3C-TEST'
+            ]
         }
     }
 
@@ -135,7 +130,9 @@ android {
     namespace 'net.gsantner.markor'
     lint {
         abortOnError false
-        disable 'MissingTranslation', 'InvalidPackage', 'ObsoleteLintCustomCheck', 'DefaultLocale', 'UnusedAttribute', 'VectorRaster', 'InflateParams', 'IconLocation', 'UnusedResources', 'TypographyEllipsis'
+        disable 'MissingTranslation', 'InvalidPackage', 'ObsoleteLintCustomCheck',
+                'DefaultLocale', 'UnusedAttribute', 'VectorRaster',
+                'InflateParams', 'IconLocation', 'UnusedResources', 'TypographyEllipsis'
     }
 }
 
@@ -154,7 +151,7 @@ dependencies {
     implementation 'androidx.legacy:legacy-preference-v14:1.0.0'
     implementation 'androidx.browser:browser:1.4.0'
 
-    // Markdown converter (Flexmark)
+    // Markdown convertor (Flexmark)
     implementation "com.vladsch.flexmark:flexmark:${version_library_flexmark}"
     implementation "com.vladsch.flexmark:flexmark-util:${version_library_flexmark}"
     implementation "com.vladsch.flexmark:flexmark-ext-emoji:${version_library_flexmark}"
@@ -173,11 +170,8 @@ dependencies {
     implementation "com.vladsch.flexmark:flexmark-ext-typographic:${version_library_flexmark}"
     implementation "com.vladsch.flexmark:flexmark-ext-admonition:${version_library_flexmark}"
 
-    // csv support
-    // https://opencsv.sourceforge.net/licenses.html License: Apache2
-    //noinspection GradleDependency
+    // CSV support
     implementation('com.opencsv:opencsv:3.10') {
-        // don't pull commons-beanutils
         exclude group: 'commons-beanutils', module: 'commons-beanutils'
     }
 
@@ -193,16 +187,5 @@ dependencies {
         implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${version_plugin_kotlin}"
     }
 
-    // JSON
     implementation 'com.google.code.gson:gson:2.10.1'
-
-    // Annotation processors placeholder
-    def anpros = []
-    for (anpro in anpros) {
-        if (enable_plugin_kotlin) {
-            kapt anpro
-        } else {
-            annotationProcessor anpro
-        }
-    }
 }
