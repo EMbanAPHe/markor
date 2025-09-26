@@ -18,6 +18,22 @@ rootProject.ext.version_minSdk = 18
 // https://github.com/vsch/flexmark-java/releases
 ext.version_library_flexmark = "0.42.14"
 
+/** --------- LIST-DRIVEN FLAVORS --------- **/
+ext.markorFlavors = [
+        [name: "notes",     label: "Markor Notes"],
+        [name: "mental",    label: "Markor Mental"],
+        [name: "journal",   label: "Markor Journal"],
+        [name: "tabletop",  label: "Markor Tabletop"],
+        [name: "dev",       label: "Markor Dev"],
+        [name: "health",    label: "Markor Health"],
+        [name: "wiki",      label: "Markor Wiki"],
+        [name: "social",    label: "Markor Social"],
+        [name: "reference", label: "Markor Reference"],
+        [name: "learn",     label: "Markor Learn"],
+        [name: "todo",      label: "Markor To-Do"],
+        [name: "scratch",   label: "Markor Scratch"]
+]
+
 android {
     buildToolsVersion rootProject.ext.version_buildTools
     compileSdkVersion rootProject.ext.version_compileSdk
@@ -40,9 +56,12 @@ android {
         setProperty("archivesBaseName", applicationId + "-v" + versionCode + "-" + versionName)
     }
 
-    // Keep existing flavors AND add your three side-by-side forks
+    /** one dimension only */
     flavorDimensions "default"
+
+    /** single productFlavors block: keep upstream flavors, then add yours from the list */
     productFlavors {
+        // upstream/testing flavors
         flavorAtest {
             applicationId "net.gsantner.markor_test"
             versionCode = Integer.parseInt(new Date().format('yyMMdd'))
@@ -55,68 +74,15 @@ android {
             buildConfigField "boolean", "IS_GPLAY_BUILD", "true"
         }
 
-        // ========= Your additional forks (unique applicationId + label) =========
-        notes {
-            applicationId "io.embanaphe.notes"
-            versionNameSuffix "-notes"
-            resValue "string", "app_name", "Markor Notes"
+        // generated forks
+        rootProject.ext.markorFlavors.each { f ->
+            create(f.name) {
+                dimension "default"
+                applicationId "io.embanaphe.${f.name}"
+                versionNameSuffix "-${f.name}"
+                resValue "string", "app_name", f.label
+            }
         }
-        mental {
-            applicationId "io.embanaphe.mental"
-            versionNameSuffix "-mental"
-            resValue "string", "app_name", "Markor Mental"
-        }
-        journal {
-            applicationId "io.embanaphe.journal"
-            versionNameSuffix "-journal"
-            resValue "string", "app_name", "Markor Journal"
-        }
-        tabletop {
-            applicationId "io.embanaphe.tabletop"
-            versionNameSuffix "-tabletop"
-            resValue "string", "app_name", "Markor Tabletop"
-        }
-        dev {
-            applicationId "io.embanaphe.dev"
-            versionNameSuffix "-dev"
-            resValue "string", "app_name", "Markor Dev"
-        }
-        health {
-            applicationId "io.embanaphe.health"
-            versionNameSuffix "-health"
-            resValue "string", "app_name", "Markor Health"
-        }
-        wiki {
-            applicationId "io.embanaphe.wiki"
-            versionNameSuffix "-wiki"
-            resValue "string", "app_name", "Markor Wiki"
-        }
-        social {
-            applicationId "io.embanaphe.social"
-            versionNameSuffix "-social"
-            resValue "string", "app_name", "Markor Social"
-        }
-        reference {
-            applicationId "io.embanaphe.reference"
-            versionNameSuffix "-reference"
-            resValue "string", "app_name", "Markor Reference"
-        }
-        learn {
-            applicationId "io.embanaphe.learn"
-            versionNameSuffix "-learn"
-            resValue "string", "app_name", "Markor Learn"
-        }
-        todo {
-            applicationId "io.embanaphe.todo"
-            versionNameSuffix "-todo"
-            resValue "string", "app_name", "Markor To-Do"
-        }
-        scratch {
-            applicationId "io.embanaphe.scratch"
-            versionNameSuffix "-scratch"
-            resValue "string", "app_name", "Markor Scratch"
-        }
-        // =======================================================================
     }
 
     sourceSets {
@@ -139,8 +105,8 @@ android {
                 storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
                 keyAlias System.getenv("ANDROID_KEY_ALIAS")
                 keyPassword System.getenv("ANDROID_KEY_ALIAS_PASSWORD")
-                // You created the key via OpenSSL (PKCS#12)
-                storeType "PKCS12"   // <-- if you switch to a .jks later, remove this line
+                // Using OpenSSL-generated PKCS#12 keystore
+                storeType "PKCS12"   // remove if you switch to a .jks keystore
             }
         }
     }
@@ -152,7 +118,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
         }
-        // debug buildType remains default/unsigned (no changes needed)
+        // debug remains default
     }
 
     packagingOptions {
@@ -188,7 +154,7 @@ dependencies {
     implementation 'androidx.legacy:legacy-preference-v14:1.0.0'
     implementation 'androidx.browser:browser:1.4.0'
 
-    // Markdown convertor (Flexmark)
+    // Markdown converter (Flexmark)
     implementation "com.vladsch.flexmark:flexmark:${version_library_flexmark}"
     implementation "com.vladsch.flexmark:flexmark-util:${version_library_flexmark}"
     implementation "com.vladsch.flexmark:flexmark-ext-emoji:${version_library_flexmark}"
@@ -209,11 +175,9 @@ dependencies {
 
     // csv support
     // https://opencsv.sourceforge.net/licenses.html License: Apache2
-    // opencsv 3.10 was the last java-6 version
-    // opencsv 5.7.1' for java-8 may have dependencies that are not backward compatibility with android-4.1
     //noinspection GradleDependency
     implementation('com.opencsv:opencsv:3.10') {
-        // do not get transitive 'commons-beanutils:commons-beanutils as the opencsv bean <-> csv feature is not used
+        // don't pull commons-beanutils
         exclude group: 'commons-beanutils', module: 'commons-beanutils'
     }
 
@@ -223,17 +187,16 @@ dependencies {
     implementation 'com.github.mertakdut:EpubParser:1.0.95'
     implementation 'com.github.martin-stone:hsv-alpha-color-picker-android:3.1.0'
 
-    // Tool libraries
-    //noinspection AnnotationProcessorOnCompilePath
+    // Tools
     implementation 'commons-io:commons-io:2.7'
     if (enable_plugin_kotlin) {
         implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${version_plugin_kotlin}"
     }
 
-    // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    // JSON
     implementation 'com.google.code.gson:gson:2.10.1'
 
-    // Processors
+    // Annotation processors placeholder
     def anpros = []
     for (anpro in anpros) {
         if (enable_plugin_kotlin) {
