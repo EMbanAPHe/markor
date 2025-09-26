@@ -40,6 +40,7 @@ android {
         setProperty("archivesBaseName", applicationId + "-v" + versionCode + "-" + versionName)
     }
 
+    // Keep existing flavors AND add your three side-by-side forks
     flavorDimensions "default"
     productFlavors {
         flavorAtest {
@@ -53,6 +54,24 @@ android {
         flavorGplay {
             buildConfigField "boolean", "IS_GPLAY_BUILD", "true"
         }
+
+        // ========= Your additional forks (unique applicationId + label) =========
+        notes {
+            applicationId "io.embanaphe.notes"
+            versionNameSuffix "-notes"
+            resValue "string", "app_name", "Markor Notes"
+        }
+        mental {
+            applicationId "io.embanaphe.mental"
+            versionNameSuffix "-mental"
+            resValue "string", "app_name", "Markor Mental"
+        }
+        journal {
+            applicationId "io.embanaphe.journal"
+            versionNameSuffix "-journal"
+            resValue "string", "app_name", "Markor Journal"
+        }
+        // =======================================================================
     }
 
     sourceSets {
@@ -65,18 +84,37 @@ android {
         main.assets.srcDirs += 'thirdparty/assets'
     }
 
-    buildTypes {
+    // ===== Signing for release (reads secrets/env vars at build time) =====
+    signingConfigs {
         release {
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // CI (GitHub Actions) should set ANDROID_KEYSTORE_PATH via $GITHUB_ENV
+            def ksPath = System.getenv("ANDROID_KEYSTORE_PATH") ?: ""
+            if (ksPath) {
+                storeFile file(ksPath)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_ALIAS_PASSWORD")
+                // You created the key via OpenSSL (PKCS#12)
+                storeType "PKCS12"   // <-- if you switch to a .jks later, remove this line
+            }
         }
     }
+
+    buildTypes {
+        release {
+            // Keep upstream release settings; add signing
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+        // debug buildType remains default/unsigned (no changes needed)
+    }
+
     packagingOptions {
         resources {
             excludes += ['META-INF/LICENSE-LGPL-2.1.txt', 'META-INF/LICENSE-LGPL-3.txt', 'META-INF/LICENSE-W3C-TEST']
         }
     }
-
 
     compileOptions {
         encoding = 'UTF-8'
@@ -88,7 +126,6 @@ android {
         abortOnError false
         disable 'MissingTranslation', 'InvalidPackage', 'ObsoleteLintCustomCheck', 'DefaultLocale', 'UnusedAttribute', 'VectorRaster', 'InflateParams', 'IconLocation', 'UnusedResources', 'TypographyEllipsis'
     }
-
 }
 
 dependencies {
