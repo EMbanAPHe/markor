@@ -1,4 +1,4 @@
-name: Build & Auto-Release Signed APKs (notes/mental/journal)
+name: Build & Auto-Release Signed APKs (Markor forks)
 
 on:
   # Build only when a tag like v2.15.1 (or v123) is pushed, or run manually
@@ -7,23 +7,28 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write    # needed to create Releases
+  contents: write
   actions: read
 
 jobs:
-  # 1) Build each flavor in parallel and upload their signed APKs as artifacts
   build:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - flavor: notes
-            flavorCap: Notes
-          - flavor: mental
-            flavorCap: Mental
-          - flavor: journal
-            flavorCap: Journal
+          - { flavor: notes,     cap: Notes     }
+          - { flavor: mental,    cap: Mental    }
+          - { flavor: journal,   cap: Journal   }
+          - { flavor: tabletop,  cap: Tabletop  }
+          - { flavor: dev,       cap: Dev       }
+          - { flavor: health,    cap: Health    }
+          - { flavor: wiki,      cap: Wiki      }
+          - { flavor: social,    cap: Social    }
+          - { flavor: reference, cap: Reference }
+          - { flavor: learn,     cap: Learn     }
+          - { flavor: todo,      cap: Todo      }
+          - { flavor: scratch,   cap: Scratch   }
 
     steps:
       - name: Checkout
@@ -52,9 +57,9 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_ALIAS_PASSWORD: ${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
-        run: ./gradlew assemble${{ matrix.flavorCap }}Release
+        run: ./gradlew assemble${{ matrix.cap }}Release
 
-      - name: Rename APKs for clarity
+      - name: Rename APK for clarity
         run: |
           mkdir -p rename/${{ matrix.flavor }}
           SRC=$(ls app/build/outputs/apk/${{ matrix.flavor }}/release/*.apk | head -n 1)
@@ -69,11 +74,9 @@ jobs:
           path: rename/${{ matrix.flavor }}/markor-${{ matrix.flavor }}.apk
           if-no-files-found: error
 
-  # 2) After all flavors finish, create ONE Release and attach all APKs
   release:
     runs-on: ubuntu-latest
     needs: build
-
     steps:
       - name: Download all built APK artifacts
         uses: actions/download-artifact@v4
@@ -86,7 +89,7 @@ jobs:
       - name: Create GitHub Release and upload APKs
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref_name }}     # reuse the pushed tag (vX.Y.Z)
+          tag_name: ${{ github.ref_name }}
           name: "Upstream sync: ${{ github.ref_name }}"
           draft: false
           prerelease: false
@@ -94,5 +97,14 @@ jobs:
             dist/markor-notes-release-signed/markor-notes.apk
             dist/markor-mental-release-signed/markor-mental.apk
             dist/markor-journal-release-signed/markor-journal.apk
+            dist/markor-tabletop-release-signed/markor-tabletop.apk
+            dist/markor-dev-release-signed/markor-dev.apk
+            dist/markor-health-release-signed/markor-health.apk
+            dist/markor-wiki-release-signed/markor-wiki.apk
+            dist/markor-social-release-signed/markor-social.apk
+            dist/markor-reference-release-signed/markor-reference.apk
+            dist/markor-learn-release-signed/markor-learn.apk
+            dist/markor-todo-release-signed/markor-todo.apk
+            dist/markor-scratch-release-signed/markor-scratch.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
