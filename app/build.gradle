@@ -71,6 +71,51 @@ android {
             versionNameSuffix "-journal"
             resValue "string", "app_name", "Markor Journal"
         }
+        tabletop {
+            applicationId "io.embanaphe.tabletop"
+            versionNameSuffix "-tabletop"
+            resValue "string", "app_name", "Markor Tabletop"
+        }
+        dev {
+            applicationId "io.embanaphe.dev"
+            versionNameSuffix "-dev"
+            resValue "string", "app_name", "Markor Dev"
+        }
+        health {
+            applicationId "io.embanaphe.health"
+            versionNameSuffix "-health"
+            resValue "string", "app_name", "Markor Health"
+        }
+        wiki {
+            applicationId "io.embanaphe.wiki"
+            versionNameSuffix "-wiki"
+            resValue "string", "app_name", "Markor Wiki"
+        }
+        social {
+            applicationId "io.embanaphe.social"
+            versionNameSuffix "-social"
+            resValue "string", "app_name", "Markor Social"
+        }
+        reference {
+            applicationId "io.embanaphe.reference"
+            versionNameSuffix "-reference"
+            resValue "string", "app_name", "Markor Reference"
+        }
+        learn {
+            applicationId "io.embanaphe.learn"
+            versionNameSuffix "-learn"
+            resValue "string", "app_name", "Markor Learn"
+        }
+        todo {
+            applicationId "io.embanaphe.todo"
+            versionNameSuffix "-todo"
+            resValue "string", "app_name", "Markor To-Do"
+        }
+        scratch {
+            applicationId "io.embanaphe.scratch"
+            versionNameSuffix "-scratch"
+            resValue "string", "app_name", "Markor Scratch"
+        }
         // =======================================================================
     }
 
